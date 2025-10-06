@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Student Dashboard</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Enrolled Courses</h6>
+                        <h3 class="mb-0">{{ total_courses }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="bi bi-book" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">My Attendance Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if attendance_stats %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Total Sessions</th>
+                                <th>Attended</th>
+                                <th>Attendance Rate</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in attendance_stats %}
+                            <tr>
+                                <td><strong>{{ stat.course.course_code }}</strong></td>
+                                <td>{{ stat.course.course_name }}</td>
+                                <td>{{ stat.total_sessions }}</td>
+                                <td>{{ stat.attended }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if stat.attendance_rate >= 75 %}bg-success{% elif stat.attendance_rate >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ stat.attendance_rate }}%;">
+                                            {{ stat.attendance_rate }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if stat.attendance_rate >= 75 %}
+                                        <span class="badge bg-success">Good</span>
+                                    {% elif stat.attendance_rate >= 50 %}
+                                        <span class="badge bg-warning">Fair</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Poor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">You are not enrolled in any courses yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

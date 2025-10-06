@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Reports{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Attendance Reports</h1>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="course" class="form-label">Select Course</label>
+                    <select name="course" id="course" class="form-select">
+                        <option value="">-- Select Course --</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if selected_course and selected_course.id == course.id %}selected{% endif %}>
+                            {{ course.course_code }} - {{ course.course_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_course %}
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Report for {{ selected_course.course_code }} - {{ selected_course.course_name }}</h5>
+    </div>
+    <div class="card-body">
+        {% if report_data %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Total Sessions</th>
+                        <th>Present</th>
+                        <th>Absent</th>
+                        <th>Late</th>
+                        <th>Attendance Rate</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in report_data %}
+                    <tr>
+                        <td>{{ data.student_id }}</td>
+                        <td>{{ data.student.get_full_name }}</td>
+                        <td>{{ data.total_sessions }}</td>
+                        <td><span class="badge bg-success">{{ data.present }}</span></td>
+                        <td><span class="badge bg-danger">{{ data.absent }}</span></td>
+                        <td><span class="badge bg-warning text-dark">{{ data.late }}</span></td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar {% if data.attendance_rate >= 75 %}bg-success{% elif data.attendance_rate >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ data.attendance_rate }}%;">
+                                    {{ data.attendance_rate }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if data.attendance_rate >= 75 %}
+                                <span class="badge bg-success">Excellent</span>
+                            {% elif data.attendance_rate >= 50 %}
+                                <span class="badge bg-warning text-dark">Fair</span>
+                            {% else %}
+                                <span class="badge bg-danger">Poor</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No students enrolled in this course yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

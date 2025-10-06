@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Attendance Records{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Attendance Records</h1>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.course.label_tag }}
+                {{ form.course }}
+            </div>
+            <div class="col-md-2">
+                {{ form.start_date.label_tag }}
+                {{ form.start_date }}
+            </div>
+            <div class="col-md-2">
+                {{ form.end_date.label_tag }}
+                {{ form.end_date }}
+            </div>
+            <div class="col-md-2">
+                {{ form.status.label_tag }}
+                {{ form.status }}
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Filter</button>
+                <a href="{% url 'attendance_records' %}" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Course</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.student.profile.student_id }}</td>
+                        <td>{{ record.student.get_full_name }}</td>
+                        <td><strong>{{ record.session.course.course_code }}</strong></td>
+                        <td>{{ record.session.session_date|date:"M d, Y" }}</td>
+                        <td>
+                            {% if record.status == 'present' %}
+                                <span class="badge badge-status-present">Present</span>
+                            {% elif record.status == 'absent' %}
+                                <span class="badge badge-status-absent">Absent</span>
+                            {% elif record.status == 'late' %}
+                                <span class="badge badge-status-late">Late</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.remarks|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No attendance records found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

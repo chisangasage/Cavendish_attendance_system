@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance Records{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">My Attendance Records</h1>
+</div>
+
+<div class="row mb-4">
+    {% for course_code, data in attendance_data.items %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">{{ course_code }} - Attendance Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chart-{{ course_code }}"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Detailed Records</h5>
+    </div>
+    <div class="card-body">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Topic</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td><strong>{{ record.session.course.course_code }}</strong></td>
+                        <td>{{ record.session.session_date|date:"M d, Y" }}</td>
+                        <td>{{ record.session.session_time }}</td>
+                        <td>{{ record.session.topic|default:"—" }}</td>
+                        <td>
+                            {% if record.status == 'present' %}
+                                <span class="badge badge-status-present">Present</span>
+                            {% elif record.status == 'absent' %}
+                                <span class="badge badge-status-absent">Absent</span>
+                            {% elif record.status == 'late' %}
+                                <span class="badge badge-status-late">Late</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.remarks|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No attendance records found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% for course_code, data in attendance_data.items %}
+(function() {
+    const ctx = document.getElementById('chart-{{ course_code }}').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ data.dates|safe }},
+            datasets: [{
+                label: 'Attendance',
+                data: {{ data.statuses|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value === 1 ? 'Present' : 'Absent';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+})();
+{% endfor %}
+</script>
+{% endblock %}

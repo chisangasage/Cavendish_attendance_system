@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Courses{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if user.profile.role == 'lecturer' %}My Courses{% else %}Enrolled Courses{% endif %}</h1>
+    {% if user.profile.role == 'lecturer' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'course_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create Course
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% if courses %}
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ course.course_code }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ course.course_name }}</h6>
+                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                    {% if user.profile.role == 'lecturer' %}
+                    <p class="mb-2">
+                        <small class="text-muted">
+                            <i class="bi bi-people"></i> {{ course.get_enrolled_students_count }} students
+                        </small>
+                    </p>
+                    {% endif %}
+                </div>
+                {% if user.profile.role == 'lecturer' %}
+                <div class="card-footer bg-white">
+                    <a href="{% url 'course_edit' course.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <a href="{% url 'course_delete' course.pk %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Delete
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                {% if user.profile.role == 'lecturer' %}
+                    You haven't created any courses yet. <a href="{% url 'course_create' %}" class="alert-link">Create your first course</a>
+                {% else %}
+                    You are not enrolled in any courses yet.
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

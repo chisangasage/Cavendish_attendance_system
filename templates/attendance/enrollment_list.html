@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Enrollments{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Student Enrollments</h1>
+    {% if user.profile.role == 'lecturer' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'enrollment_create' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Enroll Student
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if enrollments %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        {% if user.profile.role == 'lecturer' %}
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        {% else %}
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Lecturer</th>
+                        {% endif %}
+                        <th>Enrolled Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        {% if user.profile.role == 'lecturer' %}
+                        <td>{{ enrollment.student.profile.student_id }}</td>
+                        <td>{{ enrollment.student.get_full_name }}</td>
+                        <td><strong>{{ enrollment.course.course_code }}</strong></td>
+                        <td>{{ enrollment.course.course_name }}</td>
+                        {% else %}
+                        <td><strong>{{ enrollment.course.course_code }}</strong></td>
+                        <td>{{ enrollment.course.course_name }}</td>
+                        <td>{{ enrollment.course.lecturer.get_full_name }}</td>
+                        {% endif %}
+                        <td>{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No enrollments found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

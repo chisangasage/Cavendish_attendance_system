@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Sessions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Attendance Sessions</h1>
+    {% if user.profile.role == 'lecturer' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'attendance_session_create' %}" class="btn btn-primary">
+            <i class="bi bi-calendar-plus"></i> Create Session
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if sessions %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Topic</th>
+                        {% if user.profile.role == 'lecturer' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td><strong>{{ session.course.course_code }}</strong></td>
+                        <td>{{ session.session_date|date:"M d, Y" }}</td>
+                        <td>{{ session.session_time }}</td>
+                        <td>{{ session.topic|default:"—" }}</td>
+                        {% if user.profile.role == 'lecturer' %}
+                        <td>
+                            <a href="{% url 'attendance_mark' session.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-circle"></i> Mark Attendance
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No sessions found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
