@@ -5,11 +5,47 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.utils import timezone
 from django import forms
+from django.http import HttpResponseForbidden
+from functools import wraps
 from datetime import datetime, timedelta
 from .models import UserProfile, Course, Enrollment, AttendanceSession, AttendanceRecord
 from .forms import (UserRegistrationForm, CourseForm, EnrollmentForm, 
                     AttendanceSessionForm, AttendanceMarkingForm, AttendanceFilterForm)
 from django.contrib.auth.models import User
+
+def lecturer_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        
+        try:
+            if request.user.profile.role != 'lecturer':
+                messages.error(request, 'Access denied. Only lecturers can access this page.')
+                return HttpResponseForbidden('Access denied. Only lecturers can access this page.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'Profile not found. Please contact administrator.')
+            return redirect('dashboard')
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+def student_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        
+        try:
+            if request.user.profile.role != 'student':
+                messages.error(request, 'Access denied. Only students can access this page.')
+                return HttpResponseForbidden('Access denied. Only students can access this page.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'Profile not found. Please contact administrator.')
+            return redirect('dashboard')
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 def register(request):
     if request.method == 'POST':
@@ -48,7 +84,13 @@ def user_logout(request):
 
 @login_required
 def dashboard(request):
-    user_profile = request.user.profile
+    try:
+        user_profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Profile not found. Please complete your profile or contact administrator.')
+        logout(request)
+        return redirect('login')
+    
     context = {'user_profile': user_profile}
     
     if user_profile.role == 'lecturer':
@@ -101,7 +143,13 @@ def dashboard(request):
 
 @login_required
 def course_list(request):
-    if request.user.profile.role == 'lecturer':
+    try:
+        user_role = request.user.profile.role
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Profile not found. Please contact administrator.')
+        return redirect('dashboard')
+    
+    if user_role == 'lecturer':
         courses = Course.objects.filter(lecturer=request.user)
     else:
         enrollments = Enrollment.objects.filter(student=request.user)
@@ -109,11 +157,8 @@ def course_list(request):
     
     return render(request, 'attendance/course_list.html', {'courses': courses})
 
-@login_required
+@lecturer_required
 def course_create(request):
-    if request.user.profile.role != 'lecturer':
-        messages.error(request, 'Only lecturers can create courses.')
-        return redirect('dashboard')
     
     if request.method == 'POST':
         form = CourseForm(request.POST)
@@ -129,7 +174,7 @@ def course_create(request):
     
     return render(request, 'attendance/course_form.html', {'form': form, 'title': 'Create Course'})
 
-@login_required
+@lecturer_required
 def course_edit(request, pk):
     course = get_object_or_404(Course, pk=pk, lecturer=request.user)
     
@@ -144,7 +189,7 @@ def course_edit(request, pk):
     
     return render(request, 'attendance/course_form.html', {'form': form, 'title': 'Edit Course'})
 
-@login_required
+@lecturer_required
 def course_delete(request, pk):
     course = get_object_or_404(Course, pk=pk, lecturer=request.user)
     
@@ -157,18 +202,21 @@ def course_delete(request, pk):
 
 @login_required
 def enrollment_list(request):
-    if request.user.profile.role == 'lecturer':
+    try:
+        user_role = request.user.profile.role
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Profile not found. Please contact administrator.')
+        return redirect('dashboard')
+    
+    if user_role == 'lecturer':
         enrollments = Enrollment.objects.filter(course__lecturer=request.user)
     else:
         enrollments = Enrollment.objects.filter(student=request.user)
     
     return render(request, 'attendance/enrollment_list.html', {'enrollments': enrollments})
 
-@login_required
+@lecturer_required
 def enrollment_create(request):
-    if request.user.profile.role != 'lecturer':
-        messages.error(request, 'Only lecturers can enroll students.')
-        return redirect('dashboard')
     
     if request.method == 'POST':
         form = EnrollmentForm(request.POST, lecturer=request.user)
@@ -181,11 +229,8 @@ def enrollment_create(request):
     
     return render(request, 'attendance/enrollment_form.html', {'form': form})
 
-@login_required
+@lecturer_required
 def attendance_session_create(request):
-    if request.user.profile.role != 'lecturer':
-        messages.error(request, 'Only lecturers can create attendance sessions.')
-        return redirect('dashboard')
     
     if request.method == 'POST':
         form = AttendanceSessionForm(request.POST, lecturer=request.user)
@@ -200,7 +245,7 @@ def attendance_session_create(request):
     
     return render(request, 'attendance/session_form.html', {'form': form})
 
-@login_required
+@lecturer_required
 def attendance_mark(request, session_id):
     session = get_object_or_404(AttendanceSession, pk=session_id, created_by=request.user)
     enrolled_students = User.objects.filter(
@@ -245,7 +290,13 @@ def attendance_mark(request, session_id):
 
 @login_required
 def attendance_session_list(request):
-    if request.user.profile.role == 'lecturer':
+    try:
+        user_role = request.user.profile.role
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Profile not found. Please contact administrator.')
+        return redirect('dashboard')
+    
+    if user_role == 'lecturer':
         sessions = AttendanceSession.objects.filter(created_by=request.user)
     else:
         sessions = AttendanceSession.objects.filter(
@@ -256,7 +307,13 @@ def attendance_session_list(request):
 
 @login_required
 def attendance_records(request):
-    if request.user.profile.role == 'student':
+    try:
+        user_role = request.user.profile.role
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Profile not found. Please contact administrator.')
+        return redirect('dashboard')
+    
+    if user_role == 'student':
         records = AttendanceRecord.objects.filter(student=request.user).order_by('-session__session_date')
         courses = Course.objects.filter(enrollments__student=request.user)
         
@@ -314,11 +371,8 @@ def attendance_records(request):
         }
         return render(request, 'attendance/lecturer_records.html', context)
 
-@login_required
+@lecturer_required
 def reports(request):
-    if request.user.profile.role != 'lecturer':
-        messages.error(request, 'Only lecturers can access reports.')
-        return redirect('dashboard')
     
     courses = Course.objects.filter(lecturer=request.user)
     selected_course = None
