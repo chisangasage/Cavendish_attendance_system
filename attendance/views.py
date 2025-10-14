@@ -46,7 +46,7 @@ def student_required(view_func):
         
         return view_func(request, *args, **kwargs)
     return wrapper
-
+"""
 def register(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -63,6 +63,7 @@ def register(request):
     else:
         form = UserRegistrationForm()
     return render(request, 'attendance/register.html', {'form': form})
+"""
 
 def user_login(request):
     if request.method == 'POST':
